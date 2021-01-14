@@ -15,55 +15,56 @@ uint16_t lowpulse = 0;
 bool highState = false;
 bool lowState = false;
 
+bool sniffed = false;
+
 void setup(void) {
   Serial.begin(9600);
   Serial.println("Ready to decode IR!");
 }
 
-void loop(void)
+void sniff()
 {
-  if (FastReadDigitalPin(IRpin))
+  highpulse = 0;
+  lowpulse = 0;
+
+  while(FastReadDigitalPin(IRpin) != 0) //high
   {
-    Serial.print(" :) ");
-    highState = true;
+    
     highpulse++;
-    if (lowState)
-    {
-      pulses[pulseIndex][LOW_INDEX] = lowpulse;
-      lowpulse = 0;
-      lowState = false;
-      Serial.print("Switch to High");
+    delayMicroseconds(RESOLUTION);
+
+    if ((highpulse >= MAXPULSE)  && (pulseIndex != 0)) {
+      printpulses();
+      pulseIndex = 0;
+      return;
     }
   }
-  else
+  
+  pulses[pulseIndex][HIGH_INDEX] = highpulse;
+
+  
+
+   while(FastReadDigitalPin(IRpin) == 0) //low
   {
-    Serial.print(" :( ");
-    lowState = true;
     lowpulse++;
-    if (highState)
-    {
-      pulses[pulseIndex][HIGH_INDEX] = highpulse;
-      highpulse = 0;
-      highState=false;
-       Serial.print("Switch to Low");
+    delayMicroseconds(RESOLUTION);
+
+    if ((lowpulse >= MAXPULSE)  && (pulseIndex != 0)) {
+      printpulses();
+      pulseIndex = 0;
+      return;
     }
+    
   }
-
-  if ((lowpulse >= MAXPULSE)  && (pulseIndex != 0)) {
-    printpulses();
-    pulseIndex = 0;
-    return;
-  }
-
-  if ((highpulse >= MAXPULSE)  && (pulseIndex != 0)) {
-    printpulses();
-    pulseIndex = 0;
-    return;
-  }
+  
+  pulses[pulseIndex][LOW_INDEX] = lowpulse;
 
   pulseIndex++;
- 
-  delay(RESOLUTION);
+}
+
+void loop(void)
+{
+ sniff();
 }
 
 void printpulses(void) {
@@ -73,6 +74,7 @@ void printpulses(void) {
     Serial.print(" usec, ");
     Serial.print(pulses[i][HIGH_INDEX] * RESOLUTION, DEC);
     Serial.println(" usec");
+    sniffed = true;
   }
 }
 
