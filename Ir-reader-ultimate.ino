@@ -1,3 +1,4 @@
+//hahah
 #define IRpin_PIN      PIND
 #define IRpin          2
 #define MAXPULSE 65000
